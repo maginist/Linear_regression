@@ -1,20 +1,30 @@
 #!/usr/bin/python3
 
 import argparse
-import sys
+import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plot
+import matplotlib.pyplot as plt
 
 class	Process(object):
 	
 	def __init__(self, datafile, output, theta=[0, 0], rate=0.1, range=1000):
-		self.output=output,
-		self.theta=theta,
-		self.data=datafile
-		self.range=range,
-		self.rate=rate
+		self.output = output
+		self.theta = theta
+		self.range = range
+		self.rate = rate
+		self.data = np.array(datafile)
+		self.km_ref = self.data[:,0]
+		self.price_ref = self.data[:,1]
+		self.km = self.standardize(self.data[:,0])
+		self.price = self.standardize(self.data[:,1])
+	
+	def standardize(self, x):
+		return ((x - np.mean(x)) / np.std(x))
+	
+	def destandardize(self, x, x_ref)
+		return x * np.std(x_ref) + np.mean(x_ref)
+	
 
-	# def 
 
 def open_thetafile(thetafile):
 	try:
@@ -28,6 +38,7 @@ def open_thetafile(thetafile):
 def open_datafile(datafile):
 	try:
 		data = pd.read_csv(datafile)
+		data = data.sort_values(by=["km"], ignore_index=True)
 	except pd.errors.EmptyDataError:
 		sys.exit("Empty data file.")
 	except pd.errors.ParserError:
@@ -46,3 +57,5 @@ if __name__ == "__main__":
 	parser.add_argument("-v", "--visual", action="store_true", default=False, help="show regression")
 	args = parser.parse_args()
 	training = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
+	print(args.datafile_train)
+	

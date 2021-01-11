@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import argparse
-import sys
 import pandas as pd
 from train import open_datafile
 
@@ -15,9 +14,8 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	price = predict(args.datafile.at[0, "theta0"], args.datafile.at[0, "theta1"], args.km)
 	if args.datafile.at[0, "theta0"] == 0 and args.datafile.at[0, "theta1"] == 0:
-		print("Your model is not usable")
-		sys.exit()
+		exit("Thetas are not set.")
 	if price > 0:
-		print("Your car is predicted to be at %d euros." % price)
+		print(f"Your car is predicted to be at %d euros." % price)
 	else:
 		print("The price of your car cannot be estimated.")

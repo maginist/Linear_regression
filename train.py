@@ -20,6 +20,10 @@ class Process(object):
         self.price = self.standardize(self.data[:, 1])
         self.sum_km = np.sum(self.data[:,0])
         self.sum_price = np.sum(self.data[:,1])
+        #self.x2 = np.sum(self.estimedprice ** 2)
+
+    def predict(self, theta0, theta1, km):
+        return theta0 + (theta1 * km)
 
     def standardize(self, x):
         return ((x - np.mean(x)) / np.std(x))
@@ -36,8 +40,7 @@ class Process(object):
     def write_theta(self):
         try:
             f = open(training.output, "w")
-            print("coucou")
-            f.write(f"theta0,theta1\n%d,%d"% training.theta[:,0], training.theta[:,1] )
+            f.write(f"theta0,theta1\n%d,%d"% training.theta[:,0], training.theta[:,1])
             f.close()
             exit("The thetafile is written, you need to use predict.py now.")
         except Exception:
@@ -81,4 +84,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     training = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
     train(training)
-    print(args.datafile_train)

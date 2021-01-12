@@ -11,6 +11,7 @@ class Process(object):
     def __init__(self, datafile, output, rate, range):
         self.output = output
         self.theta = [0, 0]
+        self.th_history = []
         self.range = range
         self.rate = rate
         self.data = np.array(datafile)
@@ -18,19 +19,18 @@ class Process(object):
         self.price_ref = self.data[:, 1]
         self.km = self.standardize(self.data[:, 0])
         self.price = self.standardize(self.data[:, 1])
-        self.sum_km = np.sum(self.data[:,0])
-        self.sum_price = np.sum(self.data[:,1])
-		self.len = len(self.data[:,0])
-        #self.x2 = np.sum(self.estimedprice ** 2)
 
     def predict(self, theta0, theta1, km):
         return theta0 + (theta1 * km)
 
-	def predict_sum(self, theta0, theta1, km):
-		
-
-
-
+    def predict_sum(self, t0, t1, km, price, b):
+        sum = []
+        for i in range(len(km)):
+            if b == 0:
+                sum.append(self.predict(t0, t1, km[i]) - price[i])
+            else:
+                sum.append(self.predict(t0, t1, km[i]- price[i]) * km[i])
+        return sum
 
     def standardize(self, x):
         return ((x - np.mean(x)) / np.std(x))
@@ -47,7 +47,7 @@ class Process(object):
     def write_theta(self):
         try:
             f = open(t.output, "w")
-            f.write(f"theta0,theta1\n%d,%d"% t.theta[:,0], t.theta[:,1])
+            f.write(f"theta0,theta1\n%d,%d"% t.theta[0], t.theta[1])
             f.close()
             exit("The thetafile is written, you need to use predict.py now.")
         except Exception:
@@ -55,8 +55,10 @@ class Process(object):
         return
 
 def train(t):
-	for i in range(t.range)
-		tmp0 = t.rate * ((1 / t.len) * (t.predict_sum())))
+    for i in range(t.range):
+        tmp0 = t.rate * (1 / len(t.km)) * np.asarray(t.predict_sum(t.theta[0], t.theta[1], t.km, t.price, 0))
+        tmp1 = t.rate * (1 / len(t.km)) * np.asarray(t.predict_sum(t.theta[0], t.theta[1], t.km, t.price, 1))
+
     return
 
 

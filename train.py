@@ -20,10 +20,17 @@ class Process(object):
         self.price = self.standardize(self.data[:, 1])
         self.sum_km = np.sum(self.data[:,0])
         self.sum_price = np.sum(self.data[:,1])
+		self.len = len(self.data[:,0])
         #self.x2 = np.sum(self.estimedprice ** 2)
 
     def predict(self, theta0, theta1, km):
         return theta0 + (theta1 * km)
+
+	def predict_sum(self, theta0, theta1, km):
+		
+
+
+
 
     def standardize(self, x):
         return ((x - np.mean(x)) / np.std(x))
@@ -39,15 +46,17 @@ class Process(object):
 
     def write_theta(self):
         try:
-            f = open(training.output, "w")
-            f.write(f"theta0,theta1\n%d,%d"% training.theta[:,0], training.theta[:,1])
+            f = open(t.output, "w")
+            f.write(f"theta0,theta1\n%d,%d"% t.theta[:,0], t.theta[:,1])
             f.close()
             exit("The thetafile is written, you need to use predict.py now.")
         except Exception:
             exit("Can't open thetafile.")
         return
 
-def train(training):
+def train(t):
+	for i in range(t.range)
+		tmp0 = t.rate * ((1 / t.len) * (t.predict_sum())))
     return
 
 
@@ -75,12 +84,12 @@ def open_datafile(datafile):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Linear regression training program")
+    parser = argparse.ArgumentParser(description="Linear regression t program")
     parser.add_argument("datafile_train", type=open_datafile, help="input a csv file well formated")
     parser.add_argument("-o", "--output", type=open_thetafile, default="theta.csv", help="output data file")
-    parser.add_argument("-r", "--range", type=int, default=1000, help="training range")
-    parser.add_argument("-rt", "--rate", type=float, default=0.1, help="training rate")
+    parser.add_argument("-r", "--range", type=int, default=1000, help="t range")
+    parser.add_argument("-rt", "--rate", type=float, default=0.1, help="t rate")
     parser.add_argument("-v", "--visual", action="store_true", default=False, help="show regression")
     args = parser.parse_args()
-    training = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
-    train(training)
+    t = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
+    train(t)

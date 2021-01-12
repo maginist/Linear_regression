@@ -11,7 +11,8 @@ class Process(object):
     def __init__(self, datafile, output, rate, range):
         self.output = output
         self.theta = [0, 0]
-        self.th_history = []
+        self.th_history_0 = [0]
+        self.th_history_1 = [0]
         self.range = range
         self.rate = rate
         self.data = np.array(datafile)
@@ -25,11 +26,13 @@ class Process(object):
 
     def predict_sum(self, t0, t1, km, price, b):
         sum = []
+        print(b)
         for i in range(len(km)):
             if b == 0:
                 sum.append(self.predict(t0, t1, km[i]) - price[i])
             else:
                 sum.append(self.predict(t0, t1, km[i]- price[i]) * km[i])
+        print("finish predict_sum")
         return sum
 
     def standardize(self, x):
@@ -58,7 +61,11 @@ def train(t):
     for i in range(t.range):
         tmp0 = t.rate * (1 / len(t.km)) * np.asarray(t.predict_sum(t.theta[0], t.theta[1], t.km, t.price, 0))
         tmp1 = t.rate * (1 / len(t.km)) * np.asarray(t.predict_sum(t.theta[0], t.theta[1], t.km, t.price, 1))
-
+        t.theta[0] = tmp0
+        t.theta[1] = tmp1
+        t.th_history_0.append(t.theta[0])
+        t.th_history_1.append(t.theta[1])
+        print (i)
     return
 
 
@@ -89,7 +96,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Linear regression t program")
     parser.add_argument("datafile_train", type=open_datafile, help="input a csv file well formated")
     parser.add_argument("-o", "--output", type=open_thetafile, default="theta.csv", help="output data file")
-    parser.add_argument("-r", "--range", type=int, default=1000, help="t range")
+    parser.add_argument("-r", "--range", type=int, default=10, help="t range")
     parser.add_argument("-rt", "--rate", type=float, default=0.1, help="t rate")
     parser.add_argument("-v", "--visual", action="store_true", default=False, help="show regression")
     args = parser.parse_args()

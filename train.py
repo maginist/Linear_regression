@@ -11,8 +11,7 @@ class Process(object):
     def __init__(self, datafile, output, rate, range):
         self.output = output
         self.theta = [0, 0]
-        self.th_history_0 = [0]
-        self.th_history_1 = [0]
+        self.th_history = [[], []]
         self.range = range
         self.rate = rate
         self.data = np.array(datafile)
@@ -23,17 +22,6 @@ class Process(object):
 
     def predict(self, theta0, theta1, km):
         return theta0 + (theta1 * km)
-
-    def predict_sum(self, t0, t1, km, price, b):
-        sum = []
-        print(b)
-        for i in range(len(km)):
-            if b == 0:
-                sum.append(self.predict(t0, t1, km[i]) - price[i])
-            else:
-                sum.append(self.predict(t0, t1, km[i]- price[i]) * km[i])
-        print("finish predict_sum")
-        return sum
 
     def standardize(self, x):
         return ((x - np.mean(x)) / np.std(x))
@@ -53,19 +41,18 @@ class Process(object):
             f.write(f"theta0,theta1\n%d,%d"% t.theta[0], t.theta[1])
             f.close()
             exit("The thetafile is written, you need to use predict.py now.")
-        except Exception:
-            exit("Can't open thetafile.")
+        except Exception as error:
+            exit(f"{error}: Can't open thetafile.")
         return
 
 def train(t):
     for i in range(t.range):
-        tmp0 = t.rate * (1 / len(t.km)) * np.asarray(t.predict_sum(t.theta[0], t.theta[1], t.km, t.price, 0))
-        tmp1 = t.rate * (1 / len(t.km)) * np.asarray(t.predict_sum(t.theta[0], t.theta[1], t.km, t.price, 1))
-        t.theta[0] = tmp0
-        t.theta[1] = tmp1
-        t.th_history_0.append(t.theta[0])
-        t.th_history_1.append(t.theta[1])
-        print (i)
+        tmp0 = (t.rate * (1/len(t.km)) * sum([t.predict(t.theta[0], t.theta[1], t.km[i]) - t.price[i] for i in range(len(t.km))]))
+        tmp1 = (t.rate * (1/len(t.km)) * sum([t.predict(t.theta[0], t.theta[1], t.km[i]- t.price[i]) * t.km[i] for i in range(len(t.km))]))
+        t.theta[0] -= tmp0
+        t.theta[1] -= tmp1
+        t.th_history[0].append(t.theta[0])
+        t.th_history[1].append(t.theta[1])
     return
 
 
@@ -74,8 +61,8 @@ def open_thetafile(thetafile):
         f = open(thetafile, "w")
         f.write("theta0,theta1\n0,0")
         f.close()
-    except Exception:
-        exit("Can't open thetafile.")
+    except Exception as error:
+            exit(f"{error}: Can't open thetafile.")
     return thetafile
 
 
@@ -96,7 +83,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Linear regression t program")
     parser.add_argument("datafile_train", type=open_datafile, help="input a csv file well formated")
     parser.add_argument("-o", "--output", type=open_thetafile, default="theta.csv", help="output data file")
-    parser.add_argument("-r", "--range", type=int, default=10, help="t range")
+    parser.add_argument("-r", "--range", type=int, default=1000, help="t range")
     parser.add_argument("-rt", "--rate", type=float, default=0.1, help="t rate")
     parser.add_argument("-v", "--visual", action="store_true", default=False, help="show regression")
     args = parser.parse_args()

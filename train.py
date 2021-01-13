@@ -12,6 +12,7 @@ class Process(object):
         self.output = output
         self.theta = [0, 0]
         self.th_history = [[], []]
+        self.tmp_history = [[], []]
         self.range = range
         self.rate = rate
         self.data = np.array(datafile)
@@ -28,9 +29,6 @@ class Process(object):
 
     def destandardize(self, x, x_ref):
         return x * np.std(x_ref) + np.mean(x_ref)
-
-    def mean_square_error(self):
-        return
 
     def write_theta(self, t0, t1):
         try:
@@ -50,6 +48,8 @@ def train(t):
         tmp1 = t.rate * (1 / m) * sum([(t.predict(t.theta[0], t.theta[1], t.km[i]) - t.price[i]) * t.km[i] for i in range(m)])
         t.theta[0] -= tmp0
         t.theta[1] -= tmp1
+        t.tmp_history[0].append(tmp0)
+        t.tmp_history[1].append(tmp1)
         t.th_history[0].append(t.theta[0])
         t.th_history[1].append(t.theta[1])
     t.write_theta(t.theta[0], t.theta[1])
@@ -78,8 +78,19 @@ def open_datafile(datafile):
         exit(f"{error}: File {datafile} corrupted or does not exist.")
     return data
 
+def print_history(hist, tmp):
+    hst, ((hist0, mean0), (hist1, mean1)) = plt.subplots(2, 2)
+    hist0.plot(hist[0], "b-")
+    mean0.plot(tmp[0], "b-")
+    hist1.plot(hist[1], "r-")
+    mean1.plot(tmp[1], "r-")
+    mean0.set_title("MSE of Th0")
+    hist0.set_title("Theta0")
+    mean1.set_title("MSE of Th1")
+    hist1.set_title("Theta1")
+    plt.show()
 
-def print_result(km, price, th0, th1):
+def print_regression(km, price, th0, th1):
     plt.plot(km, price, "bo", label="Data")
     plt.plot(km, th0 + th1 * km, "-r", label="regression")
     plt.xlabel("km")
@@ -103,4 +114,6 @@ if __name__ == "__main__":
     t = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
     train(t)
     if args.show:
-        print_result(t.km, t.price, t.theta[0], t.theta[1])
+        print_regression(t.km, t.price, t.theta[0], t.theta[1])
+    if args.history:
+        print_history(t.th_history, t.tmp_history)

@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from progress.bar import ChargingBar
 
 
 class Process(object):
@@ -11,6 +12,7 @@ class Process(object):
     def __init__(self, datafile, output, rate, range):
         self.output = output
         self.theta = [0, 0]
+        self.theta_dest = [0, 0]
         self.th_history = [[], []]
         self.tmp_history = [[], []]
         self.range = range
@@ -30,10 +32,26 @@ class Process(object):
     def destandardize(self, x, x_ref):
         return x * np.std(x_ref) + np.mean(x_ref)
 
+    def destandardize_theta(self, km_ref, price_ref, theta, dest):
+        x0 = 1000
+        y0 = 42000
+        x0_stdz = (x0 - np.mean(km_ref)) / np.std(km_ref)
+        y0_stdz = (y0 - np.mean(km_ref)) / np.std(km_ref)
+        x1_stdz = theta[0] + (theta[1] * x0_stdz)
+        y1_stdz = theta[0] + (theta[1] * y0_stdz)
+        x1 = x1_stdz * np.std(price_ref) + np.mean(price_ref)
+        y1 = y1_stdz * np.std(price_ref) + np.mean(price_ref)
+        th1 = (y1 - x1) / (y0 - x0)
+        th0 = x1 - (th1 * x0)
+        theta[0] = th0
+        theta[1] = th1
+        if dest:
+            print_regression(km_ref, price_ref, th0, th1)
+
     def write_theta(self, t0, t1):
         try:
             f = open(t.output, "w")
-            print(t0,t1)
+            print(f"The obtained thetas are : \nth0 : {t0}\nth1 : {t1}\n")
             f.write(f"theta0,theta1\n{t0},{t1}")
             f.close()
             print("The thetafile is written, you need to use predict.py now.")
@@ -41,8 +59,9 @@ class Process(object):
             exit(f"{error}: Can't open thetafile.")
         return
 
-def train(t):
+def train(t, autorate, dest):
     m = len(t.km)
+    bar = ChargingBar('Training', max=t.range, suffix='%(percent)d%%')
     for i in range(t.range):
         tmp0 = t.rate * (1 / m) * sum([t.predict(t.theta[0], t.theta[1], t.km[i]) - t.price[i] for i in range(m)])
         tmp1 = t.rate * (1 / m) * sum([(t.predict(t.theta[0], t.theta[1], t.km[i]) - t.price[i]) * t.km[i] for i in range(m)])
@@ -52,9 +71,12 @@ def train(t):
         t.tmp_history[1].append(tmp1)
         t.th_history[0].append(t.theta[0])
         t.th_history[1].append(t.theta[1])
-    t.write_theta(t.theta[0], t.theta[1])
-    return
-
+        bar.next()
+    bar.finish()
+    t.theta_dest[0] = t.theta[0]
+    t.theta_dest[1] = t.theta[1]
+    t.destandardize_theta(t.km_ref, t.price_ref, t.theta_dest, dest)
+    t.write_theta(t.theta_dest[0], t.theta_dest[1])
 
 def open_thetafile(thetafile):
     try:
@@ -109,10 +131,12 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--range", type=int, default=1000, help="training range (epochs)")
     parser.add_argument("-rt", "--rate", type=float, default=0.1, help="training rate")
     parser.add_argument("-s", "--show", action="store_true", default=False, help="show regression")
+    parser.add_argument("-sd", "--show_dest", action="store_true", default=False, help="show regression destandarized")
     parser.add_argument("-H", "--history", action="store_true", default=False, help="show history (mean square error")
+    parser.add_argument("-ar", "--autorate", action="store_true", default=False, help="Use autorating for stopping the program when it's not usefull to continue.")
     args = parser.parse_args()
     t = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
-    train(t)
+    train(t, args.autorate, args.show_dest)
     if args.show:
         print_regression(t.km, t.price, t.theta[0], t.theta[1])
     if args.history:

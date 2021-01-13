@@ -7,6 +7,17 @@ from train import open_datafile
 def predict(theta0, theta1, km):
 	return theta0 + (theta1 * km)
 
+def open_datafile(datafile):
+    try:
+        data = pd.read_csv(datafile)
+    except pd.errors.EmptyDataError:
+        exit("Empty data file.")
+    except pd.errors.ParserError:
+        raise argparse.ArgumentTypeError("Error parsing file, needs to be a well formated csv.")
+    except Exception as error:
+        exit(f"{error}: File {datafile} corrupted or does not exist.")
+    return data
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="Linear regression predict program")
 	parser.add_argument("datafile", type=open_datafile, help="input a csv file with 2 floats well formated [theta0, theta1]")

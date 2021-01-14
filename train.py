@@ -32,7 +32,7 @@ class Process(object):
     def destandardize(self, x, x_ref):
         return x * np.std(x_ref) + np.mean(x_ref)
 
-    def destandardize_theta(self, km_ref, price_ref, theta, dest):
+    def destandardize_theta(self, km_ref, price_ref, theta):
         x0 = 1000
         y0 = 42000
         x0_stdz = (x0 - np.mean(km_ref)) / np.std(km_ref)
@@ -45,8 +45,6 @@ class Process(object):
         th0 = x1 - (th1 * x0)
         theta[0] = th0
         theta[1] = th1
-        if dest:
-            print_regression(km_ref, price_ref, th0, th1)
 
     def write_theta(self, t0, t1):
         try:
@@ -59,7 +57,7 @@ class Process(object):
             exit(f"{error}: Can't open thetafile.")
         return
 
-def train(t, autorate, dest):
+def train(t, autorate):
     m = len(t.km)
     bar = ChargingBar('Training', max=t.range, suffix='%(percent)d%%')
     for i in range(t.range):
@@ -75,7 +73,7 @@ def train(t, autorate, dest):
     bar.finish()
     t.theta_dest[0] = t.theta[0]
     t.theta_dest[1] = t.theta[1]
-    t.destandardize_theta(t.km_ref, t.price_ref, t.theta_dest, dest)
+    t.destandardize_theta(t.km_ref, t.price_ref, t.theta_dest)
     t.write_theta(t.theta_dest[0], t.theta_dest[1])
 
 def open_thetafile(thetafile):
@@ -102,6 +100,7 @@ def open_datafile(datafile):
 
 def print_history(hist, tmp):
     hst, ((hist0, mean0), (hist1, mean1)) = plt.subplots(2, 2)
+    hst.suptitle("History of Thetas and MSEs during training")
     hist0.plot(hist[0], "b-")
     mean0.plot(tmp[0], "b-")
     hist1.plot(hist[1], "r-")
@@ -117,15 +116,13 @@ def print_regression(km, price, th0, th1):
     plt.plot(km, th0 + th1 * km, "-r", label="regression")
     plt.xlabel("km")
     plt.ylabel("price")
-    plt.xlim(min(km), max(km))
-    plt.ylim(min(price), max(price))
     plt.legend()
     plt.title("ft_linear_regression")
     plt.show()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Linear regression t program")
+    parser = argparse.ArgumentParser(description="Linear regression training program")
     parser.add_argument("datafile_train", type=open_datafile, help="input a csv file well formated")
     parser.add_argument("-o", "--output", type=open_thetafile, default="theta.csv", help="output data file")
     parser.add_argument("-r", "--range", type=int, default=1000, help="training range (epochs)")
@@ -136,8 +133,10 @@ if __name__ == "__main__":
     parser.add_argument("-ar", "--autorate", action="store_true", default=False, help="Use autorating for stopping the program when it's not usefull to continue.")
     args = parser.parse_args()
     t = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
-    train(t, args.autorate, args.show_dest)
+    train(t, args.autorate)
     if args.show:
         print_regression(t.km, t.price, t.theta[0], t.theta[1])
+    if args.show_dest:
+        print_regression(t.km_ref, t.price_ref, t.theta_dest[0], t.theta_dest[1])
     if args.history:
         print_history(t.th_history, t.tmp_history)

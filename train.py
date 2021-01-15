@@ -22,6 +22,7 @@ class Process(object):
         self.price_ref = self.data[:, 1]
         self.km = self.standardize(self.data[:, 0])
         self.price = self.standardize(self.data[:, 1])
+        self.r2 = 0
 
     def predict(self, theta0, theta1, km):
         return theta0 + (theta1 * km)
@@ -57,6 +58,7 @@ class Process(object):
             exit(f"{error}: Can't open thetafile.")
         return
 
+
 def train(t, autorate):
     m = len(t.km)
     bar = ChargingBar('Training', max=t.range, suffix='%(percent)d%%')
@@ -75,6 +77,15 @@ def train(t, autorate):
     t.theta_dest[1] = t.theta[1]
     t.destandardize_theta(t.km_ref, t.price_ref, t.theta_dest)
     t.write_theta(t.theta_dest[0], t.theta_dest[1])
+
+
+def compute_r2(t):
+    m = len(t.km)
+    sum_mse = sum([(t.predict(t.theta[0], t.theta[1], t.km[i]) - t.price[i]) ** 2 for i in range(m)])
+    sum2 = sum([(t.km[i] - np.mean(t.km)) ** 2 for i in range(m)])
+    t.r2 = 1 - sum_mse / sum2
+    print(f"The R2 score for this data set is : {t.r2}")
+
 
 def open_thetafile(thetafile):
     try:
@@ -98,6 +109,7 @@ def open_datafile(datafile):
         exit(f"{error}: File {datafile} corrupted or does not exist.")
     return data
 
+
 def print_history(hist, tmp):
     hst, ((hist0, mean0), (hist1, mean1)) = plt.subplots(2, 2)
     hst.suptitle("History of Thetas and MSEs during training")
@@ -110,6 +122,7 @@ def print_history(hist, tmp):
     mean1.set_title("MSE of Th1")
     hist1.set_title("Theta1")
     plt.show()
+
 
 def print_regression(km, price, th0, th1):
     plt.plot(km, price, "bo", label="Data")
@@ -131,6 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("-sd", "--show_dest", action="store_true", default=False, help="show regression destandarized")
     parser.add_argument("-H", "--history", action="store_true", default=False, help="show history (mean square error")
     parser.add_argument("-ar", "--autorate", action="store_true", default=False, help="Use autorating for stopping the program when it's not usefull to continue.")
+    parser.add_argument("-r2", "--r2score", action="store_true", default=False, help="Compute R2 score (coefficient of determination)")
     args = parser.parse_args()
     t = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
     train(t, args.autorate)
@@ -140,3 +154,5 @@ if __name__ == "__main__":
         print_regression(t.km_ref, t.price_ref, t.theta_dest[0], t.theta_dest[1])
     if args.history:
         print_history(t.th_history, t.tmp_history)
+    if args.r2score:
+        compute_r2(t)

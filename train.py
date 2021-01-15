@@ -22,7 +22,7 @@ class Process(object):
         self.th_dest = [0, 0]
         self.th_history = [[], []]
         self.tmp_history = [[], []]
-        self.mse_prev = 0
+        self.mse_hist = []
         self.r2 = 0
 
     def predict(self, th0, th1, km):
@@ -71,10 +71,10 @@ class Process(object):
             bar.next()
             mse = sum([(self.predict(self.th[0], self.th[1], self.km[i]) - self.price[i]) ** 2 for i in range(m)])
             if autostop & i != 0:
-                percent = self.percent_diff(mse, self.mse_prev)
+                percent = self.percent_diff(mse, self.mse_hist[-1])
                 if percent < 1e-50:  # 323 / 324
                     break
-            self.mse_prev = mse
+            self.mse_hist.append(mse)
         bar.finish()
         self.th_dest[0] = self.th[0]
         self.th_dest[1] = self.th[1]
@@ -95,15 +95,21 @@ class PrintRes(object):
 
     def print_history(self, hist, tmp):
         hst, ((hist0, mean0), (hist1, mean1)) = plt.subplots(2, 2)
-        hst.suptitle("History of Thetas and MSEs during training")
+        hst.suptitle("History of Thetas and and Thetas' Difference during training")
         hist0.plot(hist[0], "b-")
         mean0.plot(tmp[0], "b-")
         hist1.plot(hist[1], "r-")
         mean1.plot(tmp[1], "r-")
-        mean0.set_title("MSE of Th0")
+        mean0.set_title("tmp0")
         hist0.set_title("Theta0")
-        mean1.set_title("MSE of Th1")
+        mean1.set_title("tmp1")
         hist1.set_title("Theta1")
+        plt.show()
+    
+    def print_mse_hist(self, mse_hist):
+        plt.plot(mse_hist, "-r")
+        plt.xlabel("Epochs")
+        plt.title("MSE values")
         plt.show()
 
 
@@ -144,15 +150,16 @@ def write_theta(t0, t1):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Linear regression training program")
-    parser.add_argument("datafile_train", type=open_datafile, help="input a csv file well formated")
-    parser.add_argument("-o", "--output", type=open_thetafile, default="theta.csv", help="output data file")
-    parser.add_argument("-r", "--range", type=int, default=1000, help="training range (epochs)")
-    parser.add_argument("-rt", "--rate", type=float, default=0.1, help="training rate")
-    parser.add_argument("-s", "--show", action="store_true", default=False, help="show regression")
-    parser.add_argument("-sd", "--show_dest", action="store_true", default=False, help="show regression destandarized")
-    parser.add_argument("-H", "--history", action="store_true", default=False, help="show history (mean square error")
+    parser.add_argument("datafile_train", type=open_datafile, help="Input a csv file well formated [theta0,theta1\nx,y]")
+    parser.add_argument("-o", "--output", type=open_thetafile, default="theta.csv", help="Output data file")
+    parser.add_argument("-r", "--range", type=int, default=1000, help="Training range (epochs)")
+    parser.add_argument("-rt", "--rate", type=float, default=0.1, help="Training rate")
+    parser.add_argument("-s", "--show", action="store_true", default=False, help="Show regression")
+    parser.add_argument("-sd", "--show_dest", action="store_true", default=False, help="Show regression destandarized")
     parser.add_argument("-as", "--autostop", action="store_true", default=False, help="Analyse execution to stop the program when it's not useful to continue.")
     parser.add_argument("-r2", "--r2score", action="store_true", default=False, help="Compute R2 score (coefficient of determination)")
+    parser.add_argument("-H", "--history", action="store_true", default=False, help="Show thetas history")
+    parser.add_argument("-mse", "--showMSE", action="store_true", default=False, help="Show Mean Square Error history")
     args = parser.parse_args()
     t = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
     prt = PrintRes()
@@ -161,7 +168,9 @@ if __name__ == "__main__":
         prt.print_regression(t.km, t.price, t.th[0], t.th[1])
     if args.show_dest:
         prt.print_regression(t.km_ref, t.price_ref, t.th_dest[0], t.th_dest[1])
-    if args.history:
-        prt.print_history(t.th_history, t.tmp_history)
     if args.r2score:
         t.compute_r2()
+    if args.history:
+        prt.print_history(t.th_history, t.tmp_history)
+    if args.showMSE:
+        prt.print_mse_hist(t.mse_hist)

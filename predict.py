@@ -26,10 +26,10 @@ if __name__ == "__main__":
     parser.add_argument("km", type=int, default="10000", help="input kilometers of the car you want to know the price for")
     args = parser.parse_args()
     try:
-        if args.datafile.at[0, "theta0"] == 0 and args.datafile.at[0, "theta1"] == 0 :
+        if args.datafile.at[0, "theta0"] == 0 and args.datafile.at[0, "theta1"] == 0:
             exit("Thetas are not set.")
     except Exception as error:
-        exit("The program need a well formated csv.")
+        exit(f"{error} : The program need a well formated csv.")
     price = predict(args.datafile.at[0, "theta0"], args.datafile.at[0, "theta1"], args.km)
     if price > 0:
         print("Your car is predicted to be at %d euros." % price)

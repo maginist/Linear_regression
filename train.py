@@ -54,7 +54,7 @@ class Process(object):
         sum_mse = sum([(self.predict(self.th[0], self.th[1], self.km[i]) - self.price[i]) ** 2 for i in range(m)])
         sum2 = sum([(self.km[i] - np.mean(self.km)) ** 2 for i in range(m)])
         self.r2 = 1 - sum_mse / sum2
-        print(f"The R2 score for this data set is : {self.r2}")
+        print(f"The R2 score for this data set is : {self.r2} / 1.")
 
     def train(self, autostop):
         m = len(self.km)
@@ -72,7 +72,7 @@ class Process(object):
             mse = sum([(self.predict(self.th[0], self.th[1], self.km[i]) - self.price[i]) ** 2 for i in range(m)])
             if autostop & i != 0:
                 percent = self.percent_diff(mse, self.mse_hist[-1])
-                if percent < 1e-50:  # 323 / 324
+                if percent < 1e-50:
                     break
             self.mse_hist.append(mse)
         bar.finish()
@@ -105,7 +105,7 @@ class PrintRes(object):
         mean1.set_title("tmp1")
         hist1.set_title("Theta1")
         plt.show()
-    
+
     def print_mse_hist(self, mse_hist):
         plt.plot(mse_hist, "-r")
         plt.xlabel("Epochs")
@@ -161,6 +161,10 @@ if __name__ == "__main__":
     parser.add_argument("-H", "--history", action="store_true", default=False, help="Show thetas history")
     parser.add_argument("-mse", "--showMSE", action="store_true", default=False, help="Show Mean Square Error history")
     args = parser.parse_args()
+    if args.rate > 1 or args.rate <= 0:
+        exit("You need to set a learning rate between 0 and 1.")
+    if args.range < 1:
+        exit("You need to set a range greater than 0.")
     t = Process(args.datafile_train, args.output, rate=args.rate, range=args.range)
     prt = PrintRes()
     t.train(args.autostop)
